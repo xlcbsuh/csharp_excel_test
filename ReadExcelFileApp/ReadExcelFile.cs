@@ -29,54 +29,40 @@ namespace ReadExcelFileApp
                 Excel.Application app = new Excel.Application();
                 Excel.Workbook workbook = app.Workbooks.Open(path, true, true);
                 Excel.Worksheet worksheet = workbook.ActiveSheet;
+                Excel.Range range = worksheet.UsedRange;
 
-                DataTable dt = new DataTable();
+                DataTable table = new DataTable();
 
-                // read header
-                int maxCol = 1;
-                while (true)
+                object[,] values = (object[,])range.get_Value(
+                    Excel.XlRangeValueDataType.xlRangeValueDefault);
+                int numRows = values.GetLength(0);
+                int numCols = values.GetLength(1);
+
+                for (int j = 1; j <= numCols; ++j)
                 {
-                    Excel.Range cell = worksheet.Cells[1, maxCol];
-                    if (cell.Value2 == null)
-                    {
-                        break;
-                    }
-
-                    dt.Columns.Add(Convert.ToString(cell.Value2));
-                    maxCol++;
+                    object value = values[1, j];
+                    table.Columns.Add(Convert.ToString(value));
                 }
 
-
-                // read body
                 DataRow row;
-                int r = 2;
-                while (true)
+                for (int i = 2; i <= numRows; ++i)
                 {
-                    Excel.Range cell = worksheet.Cells[r, 1];
-                    if (cell.Value2 == null)
+                    row = table.NewRow();
+                    for (int j = 1; j <= numCols; ++j)
                     {
-                        break;
+                        object value = values[i, j];
+                        row[j - 1] = value;
                     }
-                    row = dt.NewRow();
-                    row[0] = Convert.ToString(cell.Value2);
-
-                    for (int i = 2; i < maxCol; ++i)
-                    {
-                        cell = worksheet.Cells[r, i];
-                        row[i - 1] = Convert.ToString(cell.Value2);
-                    }
-
-                    dt.Rows.Add(row);
-                    r++;
+                    table.Rows.Add(row);
                 }
 
                 workbook.Close(false);
                 app.Workbooks.Close();
                 app.Quit();
 
-                return dt;
+                return table;
             }
-            catch (Exception)
+            catch (Exception e)
             {
                 return null;
             }
